@@ -65,6 +65,7 @@ BORGES_RUN_CONSUMER="borges consumer \
     --broker=amqp://127.0.0.1:${RABBITMQ_PORT_EXTERNAL} \
     --queue=${BORGES_QUEUE} \
     --workers=${BORGES_NUM_WORKERS}"
+BORGES_ARCHIVE="/tmp/root-repositories"
 
 isRunning() {
     status=`docker inspect --format='{{.State.Status}}' --type=container $1 2>&1`
@@ -105,28 +106,61 @@ remove() {
     fi
 }
 
-remove ${RABBITMQ_CONTAINER}
-echo [${RABBITMQ_CONTAINER}] running docker container...
-${RABBITMQ_RUN} >/dev/null
+compile_borges() {
+    echo [borges] compiling and installing...
+    pushd ${GOPATH}/src/github.com/src-d/borges >/dev/null
+    go install ./...
+    popd >/dev/null
+}
 
-remove ${POSTGRES_CONTAINER}
-echo [${POSTGRES_CONTAINER}] running docker container...
-${POSTGRES_RUN} >/dev/null
 
-sleep 10
+restart_rabbitmq() {
+    remove ${RABBITMQ_CONTAINER}
+    echo [${RABBITMQ_CONTAINER}] running docker container...
+    eval "${RABBITMQ_RUN}" >/dev/null
+}
 
-echo [borges-postgres] creating tables...
-eval "${POSTGRES_CREATE_TABLES}" >/dev/null
-sleep 2
+restart_postgres() {
+    remove ${POSTGRES_CONTAINER}
+    echo [${POSTGRES_CONTAINER}] running docker container...
+    eval "${POSTGRES_RUN}" >/dev/null
+}
 
-pushd ${GOPATH}/src/github.com/src-d/borges >/dev/null
-go install ./...
-popd >/dev/null
+wait_for_containers() {
+    echo waiting for containers to boot up...
+    sleep 10
+}
 
-echo [borges] running producer...
-${BORGES_RUN_PRODUCER}
+create_tables() {
+    echo [borges-postgres] creating tables...
+    eval "${POSTGRES_CREATE_TABLES}" >/dev/null
+}
 
-sleep 2
+delete_archive() {
+    echo deleting archive from previous executions...
+    rm -rf "${BORGES_ARCHIVE}"
+}
 
-echo [borges] running consumer...
-${BORGES_RUN_CONSUMER}
+run_producer() {
+    echo [borges] running producer...
+    ${BORGES_RUN_PRODUCER}
+    sleep 2
+}
+
+run_consumer() {
+    echo [borges] running consumer...
+    ${BORGES_RUN_CONSUMER}
+}
+
+
+compile_borges
+
+restart_postgres
+restart_rabbitmq
+wait_for_containers
+
+create_tables
+delete_archive
+
+run_producer
+run_consumer
