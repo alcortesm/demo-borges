@@ -4,6 +4,7 @@ set -e
 set -u
 
 RABBITMQ_IMAGE="rabbitmq"
+# the user and password for the management account is "guest:guest"
 RABBITMQ_VERSION="3-management"
 RABBITMQ_CONTAINER="borges-rabbitmq"
 # rabbitmq stores data according to the hostname, so we need to pass one
