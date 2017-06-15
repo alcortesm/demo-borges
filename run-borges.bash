@@ -34,6 +34,25 @@ POSTGRES_RUN="docker run -d \
     --env POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
     --publish ${POSTGRES_PORT_EXTERNAL}:${POSTGRES_PORT_INTERNAL} \
     ${POSTGRES_IMAGE}:${POSTGRES_VERSION}"
+POSTGRES_CLIENT="psql"
+POSTGRES_CLIENT_COMMAND="CREATE TABLE IF NOT EXISTS repositories (
+    id uuid PRIMARY KEY,
+    created_at timestamptz,
+    updated_at timestamptz,
+    endpoints text[],
+    status varchar(20),
+    fetched_at timestamptz,
+    fetch_error_at timestamptz,
+    last_commit_at timestamptz,
+    _references jsonb
+); CREATE INDEX idx_endpoints on \"repositories\" USING GIN (\"endpoints\");"
+POSTGRES_CREATE_TABLES="docker exec \
+    --tty=true \
+    --interactive=true \
+    ${POSTGRES_CONTAINER} \
+    ${POSTGRES_CLIENT} \
+    --username=${POSTGRES_USER} \
+    --command='${POSTGRES_CLIENT_COMMAND}'"
 
 BORGES_INPUT="borges_input.txt"
 BORGES_QUEUE="borges"
@@ -94,7 +113,11 @@ remove ${POSTGRES_CONTAINER}
 echo [${POSTGRES_CONTAINER}] running docker container...
 ${POSTGRES_RUN} >/dev/null
 
-sleep 4
+sleep 10
+
+echo [borges-postgres] creating tables...
+eval "${POSTGRES_CREATE_TABLES}" >/dev/null
+sleep 2
 
 pushd ${GOPATH}/src/github.com/src-d/borges >/dev/null
 go install ./...
