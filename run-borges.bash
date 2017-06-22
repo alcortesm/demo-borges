@@ -58,12 +58,11 @@ POSTGRES_CREATE_TABLES="docker exec \
 BORGES_INPUT="borges_input.txt"
 BORGES_QUEUE="borges"
 BORGES_NUM_WORKERS="2"
+BORGES_CONFIGURE_ENVIRONMENT="export CONFIG_BROKER=amqp://127.0.0.1:${RABBITMQ_PORT_EXTERNAL}"
 BORGES_RUN_PRODUCER="borges producer \
     --source=file --file=${BORGES_INPUT} \
-    --broker=amqp://127.0.0.1:${RABBITMQ_PORT_EXTERNAL} \
     --queue=${BORGES_QUEUE}"
 BORGES_RUN_CONSUMER="borges consumer \
-    --broker=amqp://127.0.0.1:${RABBITMQ_PORT_EXTERNAL} \
     --queue=${BORGES_QUEUE} \
     --workers=${BORGES_NUM_WORKERS}"
 BORGES_ARCHIVE="/tmp/root-repositories"
@@ -142,13 +141,22 @@ delete_archive() {
     rm -rf "${BORGES_ARCHIVE}"
 }
 
+configure_environment() {
+    echo [borges] configuring environment...
+    ${BORGES_CONFIGURE_ENVIRONMENT}
+}
+
 run_producer() {
+    configure_environment
+
     echo [borges] running producer...
     ${BORGES_RUN_PRODUCER}
     sleep 2
 }
 
 run_consumer() {
+    configure_environment
+
     echo [borges] running consumer...
     ${BORGES_RUN_CONSUMER}
 }

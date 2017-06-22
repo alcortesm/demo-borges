@@ -1,3 +1,9 @@
 git://github.com/alcortesm/MazeGame.git
 git://github.com/alcortesm/tgz.git
+git://github.com/alcortesm/sample.git
+git://github.com/alcortesm/queue.git
+git://github.com/alcortesm/msgbroker.git
+git://github.com/alcortesm/sysmon.git
+git://github.com/alcortesm/demo-borges.git
+git://github.com/alcortesm/demo-markdown.git
 
